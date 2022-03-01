@@ -26,7 +26,7 @@ new bool:CHATRBS_PREFIX_ENABLED = true;
 new bool:STATSRBS_PREFIX_ENABLED[2] = {true,true};
 
 public stock const PluginName[] = "CA: Prefix";
-public stock const PluginVersion[] = "1.0";
+public stock const PluginVersion[] = "1.0.1";
 public stock const PluginAuthor[] = "Karaulov";
 //public stock const PluginURL[] = "https://github.com/ChatAdditions";
 public stock const PluginDescription[] = "Prefix for CA. Install after all other CA addons!";
@@ -320,7 +320,7 @@ CheckMessage(id, const message[], const bool:team) {
 	{
 		if (pid == id || !is_user_connected(pid))
 		{
-			continue
+			continue;
 		}
 		new TeamName:iPidTeam = get_member(pid,m_iTeam);
 		
@@ -362,7 +362,7 @@ public OnAPISendChatPrefix(id, prefix[], type)
 {
 	if( GAMECMS_PREFIX_ENABLED && prefix[0] != EOS )
 	{
-		if (type == 1 && cmsapi_get_user_services(id, "", "nick_prefix", 1))
+		if (type == 1 && cmsapi_get_user_services(id, "", "_nick_prefix", 0))
 		{
 			if (g_sGameCmsPrefix[id][0] == EOS || strfind(g_sGameCmsPrefix[id],prefix) == -1)
 			{
@@ -407,12 +407,12 @@ stock print_color( const id, const sender, const input[], any:... )
 	}
 	else 
 	{
-		vformat( msg, charsmax( msg ), input, 4 );
+		vformat(msg,charsmax(msg),input,4);
 	}
 	
-	static msgId_SayText
+	static msgId_SayText;
 	if(!msgId_SayText) {
-		msgId_SayText = get_user_msgid("SayText")
+		msgId_SayText = get_user_msgid("SayText");
 	}
 	
 	if (id != 0)
