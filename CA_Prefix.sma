@@ -17,6 +17,10 @@ new g_sGameCmsPrefix[MAX_PLAYERS + 1][128];
 new g_sGameCmsAdminPrefix[MAX_PLAYERS + 1][128];
 new g_sChatRbsPrefix[MAX_PLAYERS + 1][128];
 
+new g_sUnrealPrefix[MAX_PLAYERS + 1][64];
+new g_sUnrealSkillPrefix[MAX_PLAYERS + 1][16];
+
+new bool:UNREAL_RANK_PREFIX_ENABLED = false;
 new bool:AES_PREFIX_ENABLED = true;
 new bool:AR_PREFIX_ENABLED = true;
 new bool:CMS_PREFIX_ENABLED = true;
@@ -24,6 +28,8 @@ new bool:GAMECMS_PREFIX_ENABLED = true;
 new bool:CHATRBS_PREFIX_ENABLED = true;
 
 new bool:STATSRBS_PREFIX_ENABLED[2] = {true,true};
+
+new bool:g_bPlayerConnected[MAX_PLAYERS + 1] = {false, ...};
 
 public stock const PluginName[] = "CA: Prefix";
 public stock const PluginVersion[] = "1.0.1";
@@ -33,6 +39,9 @@ public stock const PluginDescription[] = "Prefix for CA. Install after all other
 
 public plugin_init() 
 {
+	register_clcmd("say",       "ClCmd_Say",      ADMIN_ALL)
+	register_clcmd("say_team",  "ClCmd_SayTeam",  ADMIN_ALL)
+	
 	register_plugin(PluginName, PluginVersion, PluginAuthor);
 	
 	register_dictionary("CA_Prefix.txt")
@@ -41,6 +50,22 @@ public plugin_init()
 public plugin_natives() 
 {
 	set_native_filter("native_filter")
+}
+
+public client_disconnected(id)
+{
+	g_sUnrealPrefix[id][0] = EOS;
+	g_sUnrealSkillPrefix[id][0] = EOS;
+	g_sGameCmsPrefix[id][0] = EOS;
+	g_sChatRbsPrefix[id][0] = EOS;
+	g_bPlayerConnected[id] = false;
+}
+
+public client_connect(id)
+{
+	g_sUnrealPrefix[id][0] = EOS;
+	g_sUnrealSkillPrefix[id][0] = EOS;
+	g_bPlayerConnected[id] = false;
 }
 
 public native_filter(const name[], index, trap) 
@@ -88,17 +113,27 @@ public native_filter(const name[], index, trap)
 }
 
 
-public CA_Client_Say(id, const message[]) {
-	return CheckMessage(id, message, false);
+public ClCmd_Say(id) {
+	static message[CA_MAX_MESSAGE_SIZE];
+	read_args(message, charsmax(message));
+	remove_quotes(message);
+	if (strlen(message) > 0 )
+		return CheckMessage(id, message, false);
+	return PLUGIN_HANDLED;
 }
 
-public CA_Client_SayTeam(id, const message[]) {
-	return CheckMessage(id, message, true);
+public ClCmd_SayTeam(id) {
+	static message[CA_MAX_MESSAGE_SIZE];
+	read_args(message, charsmax(message));
+	remove_quotes(message);
+	if (strlen(message) > 0 )
+		return CheckMessage(id, message, true);
+	return PLUGIN_HANDLED;
 }
 
 CheckMessage(id, const message[], const bool:team) {
-	if(message[0] == '/') {
-		return CA_CONTINUE;
+	if(id == 0 || id > 33 || message[0] == '/' || !is_user_connected(id)) {
+		return PLUGIN_HANDLED;
 	}
 	
 	new outMessage[256];
@@ -229,7 +264,16 @@ CheckMessage(id, const message[], const bool:team) {
 	new bool:rankAdded = false;
 	new rankName[64];
 	
-	if (AES_PREFIX_ENABLED)
+	if (UNREAL_RANK_PREFIX_ENABLED && !rankAdded)
+	{
+		if (g_sUnrealPrefix[id][0] != EOS)
+		{
+			copy(rankName,charsmax(rankName),g_sUnrealPrefix[id]);
+			rankAdded = true;
+		}
+	}
+	
+	if (AES_PREFIX_ENABLED && !rankAdded)
 	{
 		new iPlayerLvl = aes_get_player_level(id);
 		if (iPlayerLvl >= 0 && rankName[0] != EOS)
@@ -270,7 +314,16 @@ CheckMessage(id, const message[], const bool:team) {
 	new bool:skillAdded = false;
 	new skillName[64];
 	
-	if (STATSRBS_PREFIX_ENABLED[0] && STATSRBS_PREFIX_ENABLED[1])
+	if (UNREAL_RANK_PREFIX_ENABLED && !skillAdded)
+	{
+		if (g_sUnrealSkillPrefix[id][0] != EOS)
+		{
+			copy(skillName,charsmax(skillName),g_sUnrealSkillPrefix[id]);
+			skillAdded = true;
+		}
+	}
+	
+	if (STATSRBS_PREFIX_ENABLED[0] && STATSRBS_PREFIX_ENABLED[1] && skillAdded)
 	{
 		new statsRbs[22];
 		new iPlayerLvl = csstats_get_user_stats(id,statsRbs);
@@ -352,16 +405,12 @@ CheckMessage(id, const message[], const bool:team) {
 	return CA_SUPERCEDE;
 }
 
-public client_disconnected(id) 
-{
-	g_sGameCmsPrefix[id][0] = EOS;
-	g_sChatRbsPrefix[id][0] = EOS;
-}
 
 public OnAPISendChatPrefix(id, prefix[], type)
 {
-	if( GAMECMS_PREFIX_ENABLED && prefix[0] != EOS )
+	if( prefix[0] != EOS )
 	{
+		GAMECMS_PREFIX_ENABLED = true;
 		if (type == 1 && cmsapi_get_user_services(id, "", "_nick_prefix", 0))
 		{
 			if (g_sGameCmsPrefix[id][0] == EOS || strfind(g_sGameCmsPrefix[id],prefix) == -1)
@@ -370,11 +419,48 @@ public OnAPISendChatPrefix(id, prefix[], type)
 				add(g_sGameCmsPrefix[id],charsmax(g_sGameCmsPrefix[]), prefix);
 				add(g_sGameCmsPrefix[id],charsmax(g_sGameCmsPrefix[]),"^1] ");
 			}
+			if (!g_bPlayerConnected[id])
+			{
+				g_bPlayerConnected[id] = true;
+				set_task(1.5,"print_joined_admin_prefix",id);
+			}
 		}
-		else if (type == 2 && get_user_flags(id) & (ADMIN_BAN | ADMIN_RESERVATION | ADMIN_IMMUNITY))
+		if (type == 2 && (get_user_flags(id) & (ADMIN_BAN | ADMIN_RESERVATION | ADMIN_IMMUNITY)) > 0)
 		{
 			copy(g_sGameCmsAdminPrefix[id], charsmax(g_sGameCmsAdminPrefix[]), prefix);
+			if (!g_bPlayerConnected[id] || task_exists(id))
+			{
+				if (task_exists(id))
+				{
+					remove_task(id);
+				}
+				g_bPlayerConnected[id] = true;
+				set_task(1.5,"print_joined_admin",id);
+			}
 		}
+	}
+}
+
+public print_joined_admin_prefix(id)
+{
+	g_bPlayerConnected[id] = true;
+	if (is_user_connected(id))
+	{
+		new username[33];
+		get_user_name(id,username,charsmax(username));
+		print_color(0,print_team_red,"^1Игрок %s ^3%s^1 присоединился к игре!",g_sGameCmsPrefix[id], username );
+	}
+}
+
+
+public print_joined_admin(id)
+{
+	g_bPlayerConnected[id] = true;
+	if (is_user_connected(id))
+	{
+		new username[33];
+		get_user_name(id,username,charsmax(username));
+		print_color(0,print_team_red,"^1Игрок [^4%s^1] ^3%s^1 присоединился к игре!",g_sGameCmsAdminPrefix[id], username );
 	}
 }
 
@@ -396,9 +482,24 @@ public chat_addons_prefix(id, prefix[])
 	}
 }
 
+public unrealranks_user_level_updated(const id,const level,const levelstr[],const rankstr[])
+{
+	UNREAL_RANK_PREFIX_ENABLED = true;
+	
+	if ( levelstr[0] != EOS )
+	{
+		copy(g_sUnrealPrefix[id],charsmax(g_sUnrealPrefix[]),levelstr);
+	}
+	
+	if ( rankstr[0] != EOS )
+	{
+		copy(g_sUnrealSkillPrefix[id],charsmax(g_sUnrealSkillPrefix[]),rankstr);
+	}
+}
+
 stock print_color( const id, const sender, const input[], any:... )
 {
-	static msg[ 192 ];
+	static msg[ 191 ];
 	new players[ 32 ], num, i = 0;
 	
 	if (numargs() == 3)
