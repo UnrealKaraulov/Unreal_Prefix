@@ -1,6 +1,7 @@
 #include <amxmodx>
 
 #define DEFAULT_CHAT_ACCESS_LEVEL ADMIN_KICK
+#define SHOW_JOINED_GAMECMS_PLAYERS
 
 // Natives
 native aes_get_player_level(player);
@@ -32,13 +33,15 @@ new bool:g_bPlayerConnected[MAX_PLAYERS + 1] = {false, ...};
 new g_hServerLanguage = LANG_SERVER;
 
 public stock const PluginName[] = "Unreal Prefix";
-public stock const PluginVersion[] = "1.0.1";
+public stock const PluginVersion[] = "1.0.2";
 public stock const PluginAuthor[] = "Karaulov";
 public stock const PluginDescription[] = "Combine of all prefixes";
 
 public plugin_init() 
 {
 	register_plugin(PluginName, PluginVersion, PluginAuthor);
+	
+	register_cvar("unreal_prefix", PluginVersion, FCVAR_SERVER | FCVAR_SPONLY);
 	
 	register_clcmd("say",       "ClCmd_Say",      ADMIN_ALL)
 	register_clcmd("say_team",  "ClCmd_SayTeam",  ADMIN_ALL)
@@ -418,15 +421,18 @@ public OnAPISendChatPrefix(id, prefix[], type)
 				add(g_sGameCmsPrefix[id],charsmax(g_sGameCmsPrefix[]), prefix);
 				add(g_sGameCmsPrefix[id],charsmax(g_sGameCmsPrefix[]),"^1] ");
 			}
+#if defined SHOW_JOINED_GAMECMS_PLAYERS
 			if (!g_bPlayerConnected[id])
 			{
 				g_bPlayerConnected[id] = true;
 				set_task(1.5,"print_joined_user_prefix",id);
 			}
+#endif
 		}
 		if (type == 2 && (get_user_flags(id) & (ADMIN_BAN | ADMIN_RESERVATION | ADMIN_IMMUNITY)) > 0)
 		{
 			copy(g_sGameCmsAdminPrefix[id], charsmax(g_sGameCmsAdminPrefix[]), prefix);
+#if defined SHOW_JOINED_GAMECMS_PLAYERS
 			if (!g_bPlayerConnected[id] || task_exists(id))
 			{
 				if (task_exists(id))
@@ -436,6 +442,7 @@ public OnAPISendChatPrefix(id, prefix[], type)
 				g_bPlayerConnected[id] = true;
 				set_task(1.5,"print_joined_admin_prefix",id);
 			}
+#endif
 		}
 	}
 }
@@ -487,7 +494,7 @@ public print_joined_admin_prefix(id)
 		replace_string( outMessage, charsmax( outMessage ), "!t", "^3" ); // Team Color
 
 		
-		print_color(0,print_team_red,outMessage, g_sGameCmsPrefix[id], username );
+		print_color(0,print_team_red,outMessage, g_sGameCmsAdminPrefix[id], username );
 	}
 }
 
