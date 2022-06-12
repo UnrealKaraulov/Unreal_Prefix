@@ -1,0 +1,25 @@
+[ru]
+UNREAL_PrefixDead = * УMEP *
+UNREAL_PrefixTEAM_CT = ( KT )
+UNREAL_PrefixTEAM_T = ( TEPPOP )
+UNREAL_PrefixTEAM_SPEC = ( 3PИTEЛЬ )
+UNREAL_PrefixADMIN_RCON = [!gГлaвный aдмин!n]
+UNREAL_PrefixADMIN_BAN = [!gAдмин!n]
+UNREAL_PrefixADMIN_KICK = [!gмл.Aдмин!n]
+UNREAL_PrefixADMIN_RESERV = [!gBИП!n]
+UNREAL_PrefixFORMAT = %status%%team%%admin%%gamecms%%rank%%skill%%addons%!t%name%!n : !g%message%
+UNREAL_PrefixJOIN_USER = !nИгрок %s !g%s!n присоединился к игре!
+UNREAL_PrefixJOIN_ADMIN = !nВнимание! [!g%s!n] !t%s!n присоединился к игре!
+
+[en]
+UNREAL_PrefixDead = * DEAD *
+UNREAL_PrefixTEAM_CT = ( COUNTER-TERRORIST )
+UNREAL_PrefixTEAM_T = ( TERRORIST )
+UNREAL_PrefixTEAM_SPEC = ( SPECTATOR )
+UNREAL_PrefixADMIN_RCON = [!gRoot Admin!n]
+UNREAL_PrefixADMIN_BAN = [!gAdmin!n]
+UNREAL_PrefixADMIN_KICK = [!gAdmin!n]
+UNREAL_PrefixADMIN_RESERV = [!gVIP!n]
+UNREAL_PrefixFORMAT = %status%%team%%admin%%gamecms%%rank%%skill%%addons%!t%name%!n : !g%message%
+UNREAL_PrefixJOIN_USER = !nUser %s !g%s!n joined!
+UNREAL_PrefixJOIN_ADMIN = !nAlert! [!g%s!n] !t%s!n joined!

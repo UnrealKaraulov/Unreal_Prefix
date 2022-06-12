@@ -1,6 +1,4 @@
 #include <amxmodx>
-#include <ChatAdditions>
-#include <reapi>
 
 #define DEFAULT_CHAT_ACCESS_LEVEL ADMIN_KICK
 
@@ -31,20 +29,21 @@ new bool:STATSRBS_PREFIX_ENABLED[2] = {true,true};
 
 new bool:g_bPlayerConnected[MAX_PLAYERS + 1] = {false, ...};
 
-public stock const PluginName[] = "CA: Prefix";
+new g_hServerLanguage = LANG_SERVER;
+
+public stock const PluginName[] = "Unreal Prefix";
 public stock const PluginVersion[] = "1.0.1";
 public stock const PluginAuthor[] = "Karaulov";
-//public stock const PluginURL[] = "https://github.com/ChatAdditions";
-public stock const PluginDescription[] = "Prefix for CA. Install after all other CA addons!";
+public stock const PluginDescription[] = "Combine of all prefixes";
 
 public plugin_init() 
 {
+	register_plugin(PluginName, PluginVersion, PluginAuthor);
+	
 	register_clcmd("say",       "ClCmd_Say",      ADMIN_ALL)
 	register_clcmd("say_team",  "ClCmd_SayTeam",  ADMIN_ALL)
 	
-	register_plugin(PluginName, PluginVersion, PluginAuthor);
-	
-	register_dictionary("CA_Prefix.txt")
+	register_dictionary("unreal_prefix.txt")
 }
 
 public plugin_natives() 
@@ -114,7 +113,7 @@ public native_filter(const name[], index, trap)
 
 
 public ClCmd_Say(id) {
-	static message[CA_MAX_MESSAGE_SIZE];
+	static message[191];
 	read_args(message, charsmax(message));
 	remove_quotes(message);
 	if (strlen(message) > 0 )
@@ -123,7 +122,7 @@ public ClCmd_Say(id) {
 }
 
 public ClCmd_SayTeam(id) {
-	static message[CA_MAX_MESSAGE_SIZE];
+	static message[191];
 	read_args(message, charsmax(message));
 	remove_quotes(message);
 	if (strlen(message) > 0 )
@@ -137,19 +136,19 @@ CheckMessage(id, const message[], const bool:team) {
 	}
 	
 	new outMessage[256];
-	if (!LookupLangKey(outMessage,charsmax(outMessage),"CA_PrefixFORMAT",id))
+	if (!LookupLangKey(outMessage,charsmax(outMessage),"UNREAL_PrefixFORMAT",g_hServerLanguage))
 	{
 		copy(outMessage,charsmax(outMessage),"%status%%team%%admin%%gamecms%%rank%%skill%%addons%!t%name%!n : !g%message%");
 	}
 	
 	new teamName[64];
-	new TeamName:iTeam = get_member(id, m_iTeam);
+	new iTeam = get_user_team(id);
 	new flags = get_user_flags(id);
 	
-	if (!is_user_alive(id) && (iTeam == TEAM_CT || iTeam == TEAM_TERRORIST))
+	if (!is_user_alive(id) && (iTeam == 2 || iTeam == 1))
 	{
 		new deadName[64];
-		if (!LookupLangKey(deadName,charsmax(deadName),"CA_PrefixDead",id) || deadName[0] == EOS)
+		if (!LookupLangKey(deadName,charsmax(deadName),"UNREAL_PrefixDead",g_hServerLanguage) || deadName[0] == EOS)
 		{
 			copy(deadName,charsmax(deadName),"*DEAD*");
 		}
@@ -162,25 +161,25 @@ CheckMessage(id, const message[], const bool:team) {
 		replace_string(outMessage,charsmax(outMessage), "%status%", "", false);
 	}
 	
-	if (team || (iTeam != TEAM_CT && iTeam != TEAM_TERRORIST) )
+	if (team || (iTeam != 2 && iTeam != 1) )
 	{
-		if (iTeam == TEAM_TERRORIST)
+		if (iTeam == 1)
 		{
-			if (!LookupLangKey(teamName,charsmax(teamName),"CA_PrefixTEAM_T",id) || teamName[0] == EOS)
+			if (!LookupLangKey(teamName,charsmax(teamName),"UNREAL_PrefixTEAM_T",g_hServerLanguage) || teamName[0] == EOS)
 			{
 				copy(teamName,charsmax(teamName),"( TERRORIST )");
 			}
 		}
-		else if (iTeam == TEAM_CT)
+		else if (iTeam == 2)
 		{
-			if (!LookupLangKey(teamName,charsmax(teamName),"CA_PrefixTEAM_CT",id) || teamName[0] == EOS)
+			if (!LookupLangKey(teamName,charsmax(teamName),"UNREAL_Prefix2",g_hServerLanguage) || teamName[0] == EOS)
 			{
 				copy(teamName,charsmax(teamName),"( COUNTER-TERRORIST )");
 			}
 		}
 		else 
 		{
-			if (!LookupLangKey(teamName,charsmax(teamName),"CA_PrefixTEAM_SPEC",id) || teamName[0] == EOS)
+			if (!LookupLangKey(teamName,charsmax(teamName),"UNREAL_PrefixTEAM_SPEC",g_hServerLanguage) || teamName[0] == EOS)
 			{
 				copy(teamName,charsmax(teamName),"( SPECTATOR )");
 			}
@@ -223,28 +222,28 @@ CheckMessage(id, const message[], const bool:team) {
 		
 		if (flags & ADMIN_RCON)
 		{
-			if (!LookupLangKey(adminName,charsmax(adminName),"CA_PrefixADMIN_RCON",id) || adminName[0] == EOS)
+			if (!LookupLangKey(adminName,charsmax(adminName),"UNREAL_PrefixADMIN_RCON",g_hServerLanguage) || adminName[0] == EOS)
 			{
 				copy(adminName,charsmax(adminName),"[^4Root Admin^1]");
 			}
 		}
 		else if (flags & ADMIN_BAN)
 		{
-			if (!LookupLangKey(adminName,charsmax(adminName),"CA_PrefixADMIN_BAN",id) || adminName[0] == EOS)
+			if (!LookupLangKey(adminName,charsmax(adminName),"UNREAL_PrefixADMIN_BAN",g_hServerLanguage) || adminName[0] == EOS)
 			{
 				copy(adminName,charsmax(adminName),"[^4Admin^1]");
 			}
 		}
 		else if (flags & ADMIN_KICK)
 		{
-			if (!LookupLangKey(adminName,charsmax(adminName),"CA_PrefixADMIN_KICK",id) || adminName[0] == EOS)
+			if (!LookupLangKey(adminName,charsmax(adminName),"UNREAL_PrefixADMIN_KICK",g_hServerLanguage) || adminName[0] == EOS)
 			{
 				copy(adminName,charsmax(adminName),"[^4Admin^1]");
 			}
 		}
 		else if (flags & ADMIN_RESERVATION)
 		{
-			if (!LookupLangKey(adminName,charsmax(adminName),"CA_PrefixADMIN_RESERV",id) || adminName[0] == EOS)
+			if (!LookupLangKey(adminName,charsmax(adminName),"UNREAL_PrefixADMIN_RESERV",g_hServerLanguage) || adminName[0] == EOS)
 			{
 				copy(adminName,charsmax(adminName),"[^4VIP^1]");
 			}
@@ -375,7 +374,7 @@ CheckMessage(id, const message[], const bool:team) {
 		{
 			continue;
 		}
-		new TeamName:iPidTeam = get_member(pid,m_iTeam);
+		new iPidTeam = get_user_team(pid);
 		
 		if (team)
 		{
@@ -383,14 +382,14 @@ CheckMessage(id, const message[], const bool:team) {
 			{
 				print_color(pid,id,"^1%s",outMessage);
 			}
-			else if (iTeam != TEAM_CT && iTeam != TEAM_TERRORIST && flags & DEFAULT_CHAT_ACCESS_LEVEL)
+			else if (iTeam != 2 && iTeam != 1 && flags & DEFAULT_CHAT_ACCESS_LEVEL)
 			{
 				print_color(pid,id,"^1%s",outMessage);
 			}
 		}
 		else 
 		{
-			if (iTeam != TEAM_CT && iTeam != TEAM_TERRORIST)
+			if (iTeam != 2 && iTeam != 1)
 			{
 				if (iTeam == iPidTeam || flags & DEFAULT_CHAT_ACCESS_LEVEL)
 					print_color(pid,id,"^1%s",outMessage);
@@ -402,7 +401,7 @@ CheckMessage(id, const message[], const bool:team) {
 		}
 	}
 	
-	return CA_SUPERCEDE;
+	return PLUGIN_HANDLED;
 }
 
 
@@ -422,7 +421,7 @@ public OnAPISendChatPrefix(id, prefix[], type)
 			if (!g_bPlayerConnected[id])
 			{
 				g_bPlayerConnected[id] = true;
-				set_task(1.5,"print_joined_admin_prefix",id);
+				set_task(1.5,"print_joined_user_prefix",id);
 			}
 		}
 		if (type == 2 && (get_user_flags(id) & (ADMIN_BAN | ADMIN_RESERVATION | ADMIN_IMMUNITY)) > 0)
@@ -435,11 +434,37 @@ public OnAPISendChatPrefix(id, prefix[], type)
 					remove_task(id);
 				}
 				g_bPlayerConnected[id] = true;
-				set_task(1.5,"print_joined_admin",id);
+				set_task(1.5,"print_joined_admin_prefix",id);
 			}
 		}
 	}
 }
+
+public print_joined_user_prefix(id)
+{
+	g_bPlayerConnected[id] = true;
+	if (is_user_connected(id))
+	{
+		new username[33];
+		get_user_name(id,username,charsmax(username));
+		
+		
+		new outMessage[256];
+		if (!LookupLangKey(outMessage,charsmax(outMessage),"UNREAL_PrefixJOIN_USER",g_hServerLanguage))
+		{
+			copy(outMessage,charsmax(outMessage),"!nИгрок %s !g%s!n присоединился к игре!");
+		}
+		
+		
+		replace_string( outMessage, charsmax( outMessage ), "!g", "^4" ); // Green Color
+		replace_string( outMessage, charsmax( outMessage ), "!n", "^1" ); // Default Color
+		replace_string( outMessage, charsmax( outMessage ), "!t", "^3" ); // Team Color
+
+		
+		print_color(0,print_team_red,outMessage, g_sGameCmsPrefix[id], username );
+	}
+}
+
 
 public print_joined_admin_prefix(id)
 {
@@ -448,19 +473,21 @@ public print_joined_admin_prefix(id)
 	{
 		new username[33];
 		get_user_name(id,username,charsmax(username));
-		print_color(0,print_team_red,"^1Игрок %s ^3%s^1 присоединился к игре!",g_sGameCmsPrefix[id], username );
-	}
-}
+		
+		
+		new outMessage[256];
+		if (!LookupLangKey(outMessage,charsmax(outMessage),"UNREAL_PrefixJOIN_ADMIN",g_hServerLanguage))
+		{
+			copy(outMessage,charsmax(outMessage),"!nВнимание! [!g%s!n] !t%s!n присоединился к игре!");
+		}
+		
+		
+		replace_string( outMessage, charsmax( outMessage ), "!g", "^4" ); // Green Color
+		replace_string( outMessage, charsmax( outMessage ), "!n", "^1" ); // Default Color
+		replace_string( outMessage, charsmax( outMessage ), "!t", "^3" ); // Team Color
 
-
-public print_joined_admin(id)
-{
-	g_bPlayerConnected[id] = true;
-	if (is_user_connected(id))
-	{
-		new username[33];
-		get_user_name(id,username,charsmax(username));
-		print_color(0,print_team_red,"^1Игрок [^4%s^1] ^3%s^1 присоединился к игре!",g_sGameCmsAdminPrefix[id], username );
+		
+		print_color(0,print_team_red,outMessage, g_sGameCmsPrefix[id], username );
 	}
 }
 
